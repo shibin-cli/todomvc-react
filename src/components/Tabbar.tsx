@@ -1,16 +1,33 @@
-import { FC } from 'react'
+import { FC, useContext, useEffect } from 'react'
+import { TodoContext } from '../App'
 
-interface Props {
-  activeCount: number
-  nowShowing: string
-  clearCompleted: () => void
-}
-const Tabbar: FC<Props> = props => {
-  const { activeCount, nowShowing, clearCompleted } = props
+const Tabbar: FC = () => {
+  const { state, dispatch } = useContext(TodoContext)
+  const { nowShowing } = state
+
+  function clearCompleted() {
+    dispatch({
+      type: 'clearCompleted',
+    })
+  }
+  const activeCount = state.todoList.reduce((accum, todo) => {
+    return todo.completed ? accum : accum + 1
+  }, 0)
+  const onHashChange = () => {
+    dispatch({
+      type: 'hashchange',
+    })
+  }
+  useEffect(() => {
+    window.addEventListener('hashchange', onHashChange)
+    return () => {
+      window.removeEventListener('hashchange', onHashChange)
+    }
+  }, [])
   return (
     <footer className="footer">
       <span className="todo-count">
-        <strong>{activeCount}</strong> item left
+        <strong>{activeCount}</strong> item left{' '}
       </span>
       <ul className="filters">
         <li>

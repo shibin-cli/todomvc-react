@@ -1,4 +1,4 @@
-import { ChangeEvent, KeyboardEvent, FC, useState } from 'react'
+import { ChangeEvent, FC, useState } from 'react'
 
 interface Props {
   id: number
@@ -9,24 +9,20 @@ interface Props {
   onEdit: () => void
   onSave: (word: string) => void
   onDelete: () => void
-  // editTodo: (e: ChangeEvent<HTMLInputElement>, todo: Todo) => void
 }
 const TodoItem: FC<Props> = props => {
-  const { completed, id, text, toggleChange, onSave, onDelete } = props
+  const { completed, text, toggleChange, id, onDelete, editing, onSave } = props
   const [word, setWord] = useState(text)
   function editTodo(e: ChangeEvent<HTMLInputElement>) {
     setWord(e.target.value)
   }
-  function handleKeyDown(e: KeyboardEvent) {
+  function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') {
-      props.onSave(word)
+      onSave(word)
     }
   }
-  function handleEdit() {
-    props.onEdit()
-  }
   return (
-    <li className={[completed ? 'completed' : '', props.editing ? 'editing' : ''].join(' ')}>
+    <li className={[completed ? 'completed' : '', editing ? 'editing' : ''].join(' ')}>
       <div className="view">
         <input
           className="toggle"
@@ -34,7 +30,7 @@ const TodoItem: FC<Props> = props => {
           checked={completed}
           onChange={() => toggleChange(id)}
         />
-        <label onDoubleClick={handleEdit}>{text}</label>
+        <label onDoubleClick={() => props.onEdit()}>{text}</label>
         <button className="destroy" onClick={onDelete}></button>
       </div>
       <input

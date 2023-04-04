@@ -1,51 +1,23 @@
-import { useState, type KeyboardEvent, ChangeEvent, useEffect } from 'react'
-import produce from 'immer'
 import Footer from './components/Footer'
 import TodoItem from './components/TodoItem'
 import Tabbar from './components/Tabbar'
-const KEY = '__TOTO_MVC__'
+import reducer, { ActionType, initState } from './store'
+import { ChangeEvent, createContext, useEffect, useReducer, useState } from 'react'
+export const TodoContext = createContext({
+  state: initState,
+  dispatch: (value: ActionType) => {
+    // no content
+    console.log(value)
+  },
+})
+
 function App() {
-  const [todoList, setTodoList] = useState<Todo[]>(getTodoList())
-  const [word, setWord] = useState('')
   const [editing, setEditing] = useState<number | null>(null)
-  const [nowShowing, setNowShowing] = useState<'all' | 'active' | 'completed'>('all')
-  function handleChange(e: ChangeEvent<HTMLInputElement>) {
-    setWord(e.target.value)
-  }
-  function getTodoList() {
-    const localData = window.localStorage.getItem(KEY)
-    if (localData) {
-      try {
-        const data = JSON.parse(localData)
-        return data
-      } catch (e) {
-        console.log(e)
-      }
-    }
-    return []
-  }
-  const onHashChange = () => {
-    const hash = window.location.hash.replace('#/', '')
-    if (hash === 'all' || hash === 'active' || hash === 'completed') {
-      return setNowShowing(hash)
-    }
-    setNowShowing('all')
-    window.location.hash && (window.location.hash = '')
-  }
-  useEffect(() => {
-    window.addEventListener('hashchange', onHashChange)
-    return () => {
-      window.removeEventListener('hashchange', onHashChange)
-    }
-  }, [])
-  useEffect(() => {
-    window.localStorage.setItem(KEY, JSON.stringify(todoList))
-  }, [todoList])
-  const activeCount = todoList.reduce((accum, todo) => {
-    return todo.completed ? accum : accum + 1
-  }, 0)
-  const shownTodoList = todoList.filter(todo => {
-    switch (nowShowing) {
+
+  const [state, dispatch] = useReducer(reducer, initState)
+
+  const shownTodoList = state.todoList.filter(todo => {
+    switch (state.nowShowing) {
       case 'active':
         return !todo.completed
       case 'completed':
@@ -54,55 +26,51 @@ function App() {
         return true
     }
   })
-  function addTodo(e: KeyboardEvent) {
+
+  function handleChange(e: ChangeEvent<HTMLInputElement>) {
+    dispatch({
+      type: 'input',
+      payload: e.target.value,
+    })
+  }
+  function addTodo(e: React.KeyboardEvent) {
     if (e.key !== 'Enter') {
       return
     }
-    setTodoList(
-      produce(draft => {
-        draft.unshift({
-          id: Date.now(),
-          text: word,
-          completed: false,
-        })
-      })
-    )
-    setWord('')
-  }
-  function clearCompleted() {
-    setTodoList(todoList.filter(todo => !todo.completed))
+    dispatch({
+      type: 'addTodo',
+    })
   }
   function todoItemChange(id: number) {
-    const index = todoList.findIndex(item => item.id === id)
-    setTodoList(
-      produce(draft => {
-        draft[index].completed = !draft[index].completed
-      })
-    )
-  }
-  function edit(todo: Todo) {
-    setEditing(todo.id)
-  }
-  function saveTodo(id: number, text: string) {
-    setTodoList(
-      produce(draft => {
-        const todo = draft.find(item => item.id === id)
-        if (todo) todo.text = text
-      })
-    )
-    setEditing(null)
+    dispatch({
+      type: 'todoStatusChange',
+      payload: id,
+    })
   }
   function deleteTodo(id: number) {
-    setTodoList(
-      produce(draft => {
-        const index = draft.findIndex(item => item.id === id)
-        draft.splice(index, 1)
-      })
-    )
+    dispatch({
+      type: 'del',
+      payload: id,
+    })
   }
+  function saveTodo(id: number, text: string) {
+    dispatch({
+      type: 'save',
+      payload: {
+        id,
+        text,
+      },
+    })
+    setEditing(null)
+  }
+  useEffect(() => {
+    dispatch({
+      type: 'localSave',
+    })
+  }, [state.todoList])
 
   return (
-    <>
+    <TodoContext.Provider value={{ state, dispatch }}>
       <section className="todoapp">
         <header className="header">
           <h1>todos</h1>
@@ -112,7 +80,7 @@ function App() {
             autoFocus
             onKeyDown={addTodo}
             onChange={e => handleChange(e)}
-            value={word}
+            value={state.word}
           />
         </header>
         <section className="main">
@@ -124,7 +92,7 @@ function App() {
                 key={item.id}
                 {...item}
                 toggleChange={todoItemChange}
-                onEdit={() => edit(item)}
+                onEdit={() => setEditing(item.id)}
                 editing={editing === item.id}
                 onSave={text => saveTodo(item.id, text)}
                 onDelete={() => deleteTodo(item.id)}
@@ -132,10 +100,10 @@ function App() {
             ))}
           </ul>
         </section>
-        <Tabbar activeCount={activeCount} nowShowing={nowShowing} clearCompleted={clearCompleted} />
+        <Tabbar />
       </section>
       <Footer />
-    </>
+    </TodoContext.Provider>
   )
 }
 
