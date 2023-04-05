@@ -1,22 +1,19 @@
-import { FC, useContext, useEffect } from 'react'
-import { TodoContext } from '../App'
+import { FC, useEffect } from 'react'
+import { useDispatch } from 'react-redux'
+import { useAppSelector } from '../store'
+import { hashchange, clearCompleted } from '../store/todoSlice'
+// import { TodoContext } from '../App'
 
 const Tabbar: FC = () => {
-  const { state, dispatch } = useContext(TodoContext)
-  const { nowShowing } = state
+  const dispatch = useDispatch()
+  const nowShowing = useAppSelector(state => state.todo.nowShowing)
+  const todoList = useAppSelector(state => state.todo.list)
 
-  function clearCompleted() {
-    dispatch({
-      type: 'clearCompleted',
-    })
-  }
-  const activeCount = state.todoList.reduce((accum, todo) => {
+  const activeCount = todoList.reduce((accum, todo) => {
     return todo.completed ? accum : accum + 1
   }, 0)
   const onHashChange = () => {
-    dispatch({
-      type: 'hashchange',
-    })
+    dispatch(hashchange())
   }
   useEffect(() => {
     window.addEventListener('hashchange', onHashChange)
@@ -46,7 +43,7 @@ const Tabbar: FC = () => {
           </a>
         </li>
       </ul>
-      <button className="clear-completed" onClick={clearCompleted}>
+      <button className="clear-completed" onClick={() => dispatch(clearCompleted())}>
         Clear completed
       </button>
     </footer>

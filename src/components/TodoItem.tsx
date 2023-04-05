@@ -1,4 +1,4 @@
-import { ChangeEvent, FC, useState } from 'react'
+import { FC, ChangeEvent, useState } from 'react'
 
 interface Props {
   id: number
@@ -11,7 +11,7 @@ interface Props {
   onDelete: () => void
 }
 const TodoItem: FC<Props> = props => {
-  const { completed, text, toggleChange, id, onDelete, editing, onSave } = props
+  const { completed, text, toggleChange, id, editing, onEdit, onDelete, onSave } = props
   const [word, setWord] = useState(text)
   function editTodo(e: ChangeEvent<HTMLInputElement>) {
     setWord(e.target.value)
@@ -30,7 +30,7 @@ const TodoItem: FC<Props> = props => {
           checked={completed}
           onChange={() => toggleChange(id)}
         />
-        <label onDoubleClick={() => props.onEdit()}>{text}</label>
+        <label onDoubleClick={onEdit}>{text}</label>
         <button className="destroy" onClick={onDelete}></button>
       </div>
       <input
